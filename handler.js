@@ -6,18 +6,20 @@
  */
 async function onRequest(request, settings) {
   const requestBody = request.json();
-  const res = await fetch('https://platform.segmentapis.com/v1beta/workspaces/<workspace-slug>/users', {
+  const usersURL = 'https://platform.segmentapis.com/v1beta/workspaces/' + settings.workspaceSlug + '/users'
+
+  const res = await fetch(usersURL, {
     method: 'get',
     headers: { 
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer <Authorization token>',
+      'Authorization': 'Bearer ' + settings.workspaceToken,
       'cache-control': 'no-cache'
     },
   })
   .then(res => res.json())
   .then(json => Segment.track({
     userId: requestBody.userId,
-    event:"Audit Function",
+    event: requestBody.properties.type,
     properties: Object.assign({email: json.users.filter(user => {
       if (user.name.split('/')[1] === requestBody.userId) {
         return user;
@@ -25,8 +27,8 @@ async function onRequest(request, settings) {
     })[0].email}, requestBody.properties)
   }))
   .catch(err => Segment.track({
-    userId: requestBody.userId || "requestBodyMalformed",
-    event:"Error",
-    properties: err.json()
-  }));
+    userId: requestBody.userId || 'requestBodyMalformed',
+    event:'Error',
+    properties: err
+  }));;
 }
